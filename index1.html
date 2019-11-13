@@ -33,7 +33,7 @@
 		#infoDiv input {
 		  border: none;
 		  box-shadow: rgba(0, 0, 0, 0.3) 0px 1px 2px;
-		}		
+		}
     </style>
 </head>
 
@@ -69,7 +69,7 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
 		zoom: 5,
 		center: [122.45, 37.75]
 	})
-	
+	//所有地名对应点经纬度
     var geoCoordMap = {
         '上海': [121.4648, 31.2891],
         '东莞': [113.8953, 22.901],
@@ -186,6 +186,7 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
         '青岛': [120.4651, 36.3373],
         '韶关': [113.7964, 24.7028]
     };
+	//北京下面对应的子代
     var BJData = [
         [{name: '北京'}, {name: '上海', value: 95}],
         [{name: '北京'}, {name: '广州', value: 90}],
@@ -222,13 +223,130 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
         [{name: '广州'}, {name: '北海', value: 20}],
         [{name: '广州'}, {name: '海口', value: 10}]
     ];
+    let rootName = '根'
+    var mockTreeData = [
+        {name:'根',lon:116.67,lat:87.80,p_c:'',t_c:'gen01',h_img:'gen.png',children:[{name:'甲',lon:116.67,lat:97.26,p_c:'',t_c:'gen01',h_img:'jia.png'},
+                {name:'乙',lon:114.67,lat:83.80,p_c:'gen01',t_c:'yi01',h_img:'yi.png'},
+                {name:'丙',lon:116.67,lat:70.80,p_c:'gen01',t_c:'bing01',h_img:'bing.png'},
+                {name:'丁',lon:103.67,lat:68.97,p_c:'yi01',t_c:'ding01',h_img:'ding.png'},
+                {name:'戊',lon:106.56,lat:85.60,p_c:'yi01',t_c:'wu01',h_img:'wu.png'},
+                {name:'己',lon:126.67,lat:88.80,p_c:'ding01',t_c:'ji01',h_img:'ji.png'},
+                {name:'庚',lon:106.97,lat:100.80,p_c:'ji01',t_c:'geng01',h_img:'geng.png'},
+                {name:'辛',lon:100.37,lat:105.80,p_c:'ji01',t_c:'xin01',h_img:'xin.png'},
+                {name:'壬',lon:96.57,lat:117.80,p_c:'bing01',t_c:'ren01',h_img:'ren.png'},
+                {name:'癸',lon:98.00,lat:114.80,p_c:'bing01',t_c:'gui02',h_img:'gui.png'}]},
+        {name:'甲',lon:116.67,lat:97.26,p_c:'',t_c:'gen01',h_img:'jia.png',children:[{name:'乙',lon:114.67,lat:83.80,p_c:'gen01',t_c:'yi01',h_img:'yi.png'},{name:'丙',lon:116.67,lat:70.80,p_c:'gen01',t_c:'bing01',h_img:'bing.png'},]},
+        {name:'乙',lon:114.67,lat:83.80,p_c:'gen01',t_c:'yi01',h_img:'yi.png',children:[{name:'丁',lon:103.67,lat:68.97,p_c:'yi01',t_c:'ding01',h_img:'ding.png'},{name:'戊',lon:106.56,lat:85.60,p_c:'yi01',t_c:'wu01',h_img:'wu.png'},]},
+        {name:'丙',lon:116.67,lat:70.80,p_c:'gen01',t_c:'bing01',h_img:'bing.png',children:[{name:'壬',lon:96.57,lat:117.80,p_c:'bing01',t_c:'ren01',h_img:'ren.png'},{name:'癸',lon:98.00,lat:114.80,p_c:'bing01',t_c:'gui02',h_img:'gui.png'},]},
+        {name:'丁',lon:103.67,lat:68.97,p_c:'yi01',t_c:'ding01',h_img:'ding.png',children:[{name:'己',lon:126.67,lat:88.80,p_c:'ding01',t_c:'ji01',h_img:'ji.png'},]},
+        {name:'戊',lon:106.56,lat:85.60,p_c:'yi01',t_c:'wu01',h_img:'wu.png',children:[]},
+        {name:'己',lon:126.67,lat:88.80,p_c:'ding01',t_c:'ji001',h_img:'ji.png',children:[{name:'庚',lon:106.97,lat:100.80,p_c:'ji01',t_c:'geng01',h_img:'geng.png'},{name:'辛',lon:100.37,lat:105.80,p_c:'ji01',t_c:'xin01',h_img:'xin.png'},]},
+        {name:'庚',lon:106.97,lat:100.80,p_c:'ji001',t_c:'geng01',h_img:'geng.png',children:[]},
+        {name:'辛',lon:100.37,lat:105.80,p_c:'ji001',t_c:'xin01',h_img:'xin.png',children:[]},
+        {name:'壬',lon:96.57,lat:117.80,p_c:'bing01',t_c:'ren01',h_img:'ren.png',children:[]},
+        {name:'癸',lon:98.00,lat:114.80,p_c:'bing01',t_c:'gui02',h_img:'gui.png',children:[]},
+        ]
+    alert(mockTreeData[4].t_c)
+    let mapCoordData = {};
+    mockTreeData.forEach((item,index)=>{
+        mapCoordData[item.name] = [item.lon,item.lat]
+    })
+    console.log(mapCoordData,"打印mapCoordData");
+
+    let directionData = function () {
+        let res = []
+        let mockData = [...mockTreeData];
+        mockData.forEach((item,index)=>{
+            let fromCoord = {}
+            let toCoord = {}
+            let eachCoord = []
+            let subN = {}
+            //1.选出根节点,并从原数组删除
+            if(!item.p_c && item.name === rootName){
+                fromCoord = {coord:item}
+                toCoord = {coord:{}}
+                eachCoord.push(fromCoord)
+                eachCoord.push(toCoord)
+                res.push(eachCoord)
+            }
+            else{
+
+                if(item.p_c){
+                    fromCoord = {coord:{}}
+                    toCoord = {coord:item}
+                    eachCoord.push(fromCoord)
+                    eachCoord.push(toCoord)
+                    res.push(eachCoord)
+                }else{
+                   subN = item;
+                }
+            }
+            const a=setTimeout( function processData(){
+                let len = res.length;
+                let j = 0;
+                res.forEach((ele,i)=>{
+                    //处理根节点
+                    if(Object.keys(ele[0].coord).length>0 && Object.keys(ele[1].coord).length===0){
+                        ele[1].coord = subN
+                    }else if(Object.keys(ele[1].coord).length>0 && Object.keys(ele[0].coord).length===0){
+                        //如果to的父code等于节点的任务code，将from赋值为该项
+                        let parent = ele[1].coord.p_c
+                        let kid = mockData[j].t_c
+                        debugger
+                        while(parent === kid && j<len){
+                            let b = mockData[j].t_c;
+                            debugger
+                            ele[0].coord = mockData[j];
+                            j++
+                        }
+                    }
+                })
+                console.log(res,"查看处理完的res")
+
+            },3000)
+        })
+        return {res,mockData}
+    };
+
+    directionData();
+    /*function processData(res){
+        res.forEach((ele,i)=>{
+            //处理根节点
+            if(Object.keys(ele[0].coord).length>0 && Object.keys(ele[1].coord).length===0){
+                ele[1].coord = subN
+            }else if(Object.keys(ele[1].coord).length>0 && Object.keys(ele[0].coord).length===0){
+
+                //如果to的父code等于节点的任务code，将from赋值为该项
+                for(let j = 0;ele[1].coord.p_c === mockData[j].t_c && j<res.length;j++){
+                    debugger
+                    ele[0].coord = mockData[j];
+                }
+            }
+        })
+        console.log(res,"查看处理完的res")
+
+    }*/
+    /*let promiseFun = new Promise((resolve,reject)=>{
+        const {res,mockData} = directionData();
+    })
+    promiseFun.then((res)=>{
+        debugger
+        // const {res,mockData} = directionData();
+        console.log(res,"resoooooooooo")
+    }).catch()*/
+    //六角形
+    // var planePath = 'path://M11.1045311,1.93470157 C11.0426328,1.90102618 10.968678,1.90102618 10.9070282,1.93470157 L1.99777401,6.9373822 C1.936,6.97055497 1.89846328,7.03514136 1.8980904,7.10663874 L1.8980904,17.0074555 C1.8980904,17.0750576 1.936,17.1410262 1.99777401,17.1760838 L10.9070282,22.1777592 C10.968678,22.2124398 11.0426328,22.2124398 11.1045311,22.1777592 L20.0137853,17.1760838 C20.0749379,17.1419058 20.1139661,17.077445 20.1139661,17.0074555 L20.1139661,7.10663874 C20.1139661,7.03526702 20.0750621,6.97055497 20.0137853,6.9373822 L11.1045311,1.93470157 Z';
+    // planePath是svg代码
     var planePath = 'path://M1705.06,1318.313v-89.254l-319.9-221.799l0.073-208.063c0.521-84.662-26.629-121.796-63.961-121.491c-37.332-0.305-64.482,36.829-63.961,121.491l0.073,208.063l-319.9,221.799v89.254l330.343-157.288l12.238,241.308l-134.449,92.931l0.531,42.034l175.125-42.917l175.125,42.917l0.531-42.034l-134.449-92.931l12.238-241.308L1705.06,1318.313z';
     var convertData = function (data) {
+        // console.log(data,"调用传的data")
         var res = [];
         for (var i = 0; i < data.length; i++) {
             var dataItem = data[i];
             var fromCoord = geoCoordMap[dataItem[0].name];
             var toCoord = geoCoordMap[dataItem[1].name];
+            // console.log(fromCoord,"--"+toCoord)
+
             if (fromCoord && toCoord) {
                 res.push([{
                     coord: fromCoord
@@ -237,12 +355,16 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
                 }]);
             }
         }
+        console.log(res,"from to")
         return res;
     };
+    //根据数据所属选择不同颜色，渲染线
     var color = ['#a6c84c', '#ffa022', '#46bee9'];
     var series = [];
+    //对这三个城市进行遍历处理连线的样式等
     [['北京', BJData], ['上海', SHData], ['广州', GZData]].forEach(function (item, i) {
-        series.push({
+        series.push(
+            {
                     name: item[0] + ' Top10',
                     type: 'lines',
                     zlevel: 1,
@@ -262,7 +384,7 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
                     },
                     data: convertData(item[1])
                 },
-                {
+            {
                     name: item[0] + ' Top10',
                     type: 'lines',
                     zlevel: 2,
@@ -283,7 +405,7 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
                     },
                     data: convertData(item[1])
                 },
-                {
+            {
                     name: item[0] + ' Top10',
                     type: 'effectScatter',
                     coordinateSystem: 'geo',
@@ -314,6 +436,7 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
                     })
                 });
     });
+    //配置chart的options
     var option = {
 		title: {
             text: 'ArcGIS JS API 4.X扩展Echarts3之模拟迁徙',
@@ -321,7 +444,7 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
             textStyle: {
                 color: '#fff'
             }
-        },			
+        },
         tooltip: {
             trigger: 'item'
         },
@@ -354,18 +477,19 @@ require(["esri/Map", 'esri/views/MapView', "esri/views/SceneView", "src/Echarts3
             }
         },
         series: series
-    };	
-	
+    };
 	options.push(option)
+    //初始化地图
 	view.when(function(){
 		initChart()
 	})
+    //地图初始化函数
 	function initChart(){
 		options.forEach((option,index)=>{
 			var overlay = new Echarts3Layer(view, echarts,'chartId_'+index)
 			var chartsContainer = overlay.getEchartsContainer()
 			overlay.initECharts(chartsContainer)
-			overlay.setOption(option)			   
+			overlay.setOption(option)
 		})
 	}
 	switchButton.onclick=function(){
